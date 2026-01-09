@@ -191,6 +191,7 @@ function generateSuggestions(changeInNew: number, changeInOld: number): ChangeSu
 
 /**
  * توليد الاقتراحات الذكية للفرق الصغير
+ * عندما يكون الفرق 5 ليرات جديدة، يقترح إضافة مبالغ معينة للحصول على فئات متاحة
  */
 function generateSmartSuggestions(changeInNew: number, changeInOld: number): SmartSuggestion[] {
   const suggestions: SmartSuggestion[] = [];

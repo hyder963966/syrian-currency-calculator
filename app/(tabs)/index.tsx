@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Animated, { FadeIn, SlideInUp, FadeOut } from "react-native-reanimated";
 import { ScreenContainer } from "@/components/screen-container";
 import { CurrencyImageGroup } from "@/components/currency-image";
+import { DamascusPatternBackground } from "@/components/damascus-pattern";
 import { cn } from "@/lib/utils";
 import { useCalculationHistory, type CalculationRecord } from "@/hooks/use-calculation-history";
 import {
@@ -113,7 +114,7 @@ export default function HomeScreen() {
             </View>
 
             {/* Input Section */}
-            <View className="gap-4 bg-surface rounded-2xl p-4 border border-border">
+            <DamascusPatternBackground className="bg-surface rounded-2xl p-4 border border-border gap-4">
               {/* Price in New Currency */}
               <View className="gap-2">
                 <Text className="text-sm font-semibold text-foreground">المبلغ المراد دفعه</Text>
@@ -122,9 +123,9 @@ export default function HomeScreen() {
                   className="bg-background border border-border rounded-lg px-4 py-3 text-foreground text-lg"
                   placeholder="أدخل المبلغ"
                   placeholderTextColor="#9BA1A6"
-                  keyboardType="number-pad"
+                  keyboardType="decimal-pad"
                   value={priceInNew}
-                  onChangeText={setPriceInNew}
+                  onChangeText={(text) => setPriceInNew(text.replace(/[^0-9]/g, ""))}
                 />
                 {priceInNew && (
                   <Animated.View entering={FadeIn} className="bg-primary/10 rounded-lg p-3 border border-primary/20">
@@ -185,9 +186,9 @@ export default function HomeScreen() {
                   className="bg-background border border-border rounded-lg px-4 py-3 text-foreground text-lg"
                   placeholder="أدخل المبلغ المدفوع"
                   placeholderTextColor="#9BA1A6"
-                  keyboardType="number-pad"
+                  keyboardType="decimal-pad"
                   value={paidAmount}
-                  onChangeText={setPaidAmount}
+                  onChangeText={(text) => setPaidAmount(text.replace(/[^0-9]/g, ""))}
                 />
                 {paidAmount && (
                   <Animated.View entering={FadeIn} className="bg-primary/10 rounded-lg p-3 border border-primary/20">
@@ -206,7 +207,7 @@ export default function HomeScreen() {
               >
                 <Text className="text-white font-semibold text-base">احسب الفرق</Text>
               </Pressable>
-            </View>
+            </DamascusPatternBackground>
 
             {/* Error Message */}
             {error && (
@@ -220,7 +221,7 @@ export default function HomeScreen() {
               <Animated.View entering={SlideInUp.springify()}>
                 <View className="gap-4">
                   {/* Change Amount */}
-                  <View className="bg-primary/10 border border-primary rounded-2xl p-4">
+                  <DamascusPatternBackground className="bg-primary/10 border border-primary rounded-2xl p-4">
                     <View>
                       <Text className="text-xs text-muted mb-2">الفرق المستحق للترجيع</Text>
                     </View>
@@ -232,7 +233,7 @@ export default function HomeScreen() {
                         أو {formatNumber(result.oldCurrency)} ليرة قديمة
                       </Text>
                     </View>
-                  </View>
+                  </DamascusPatternBackground>
 
                   {/* Change Suggestions */}
                   {result.suggestions.length > 0 && (
@@ -306,7 +307,7 @@ export default function HomeScreen() {
 function ChangeSuggestionCard({ suggestion, index }: { suggestion: any; index: number }) {
   const optionLabel = index === 0 ? "الخيار الأول" : index === 1 ? "الخيار الثاني" : "الخيار الثالث";
   return (
-    <View className="bg-surface rounded-lg p-4 border border-border gap-4">
+    <DamascusPatternBackground className="bg-surface rounded-lg p-4 border border-border gap-4">
       <View>
         <Text className="text-xs text-muted font-semibold">{optionLabel}</Text>
       </View>
@@ -332,13 +333,13 @@ function ChangeSuggestionCard({ suggestion, index }: { suggestion: any; index: n
           </View>
         </View>
       )}
-    </View>
+    </DamascusPatternBackground>
   );
 }
 
 function SmartSuggestionCard({ suggestion }: { suggestion: any }) {
   return (
-    <View className="bg-primary/5 rounded-lg p-4 border border-primary/30 gap-4">
+    <DamascusPatternBackground className="bg-primary/5 rounded-lg p-4 border border-primary/30 gap-4">
       <View className="gap-1">
         <Text className="text-sm font-semibold text-primary">{suggestion.description}</Text>
         <Text className="text-xs text-muted">
@@ -363,7 +364,7 @@ function SmartSuggestionCard({ suggestion }: { suggestion: any }) {
           </View>
         </View>
       )}
-    </View>
+    </DamascusPatternBackground>
   );
 }
 
