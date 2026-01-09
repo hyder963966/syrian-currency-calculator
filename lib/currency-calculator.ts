@@ -4,6 +4,7 @@
  */
 
 // فئات العملات
+// ملاحظة: لا توجد فئة 5 ليرات في العملة الجديدة
 export const NEW_CURRENCY_DENOMINATIONS = [10, 25, 50, 100, 200, 500];
 export const OLD_CURRENCY_DENOMINATIONS = [500, 1000, 2000, 5000];
 
@@ -194,6 +195,7 @@ function generatePaymentSuggestions(priceInOld: number, paidInOld: number): Paym
 /**
  * الحصول على أفضل توزيع للفئات
  * تحاول استخدام أكبر الفئات أولاً
+ * ملاحظة: تتجنب استخدام فئة 5 ليرات في العملة الجديدة
  */
 function getOptimalDenominations(
   amount: number,
@@ -244,6 +246,7 @@ function getOptimalDenominations(
   }
 
   // إزالة الفئات بـ 0 عدد
+  // تصفية أي فئات غير مطلوبة (مثل 5 ليرات في الجديدة)
   return result.filter(r => r.count > 0);
 }
 
