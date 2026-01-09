@@ -1,12 +1,12 @@
-import { ScrollView, Text, View, TextInput, Pressable, Image, Alert } from "react-native";
+import { ScrollView, Text, View, TextInput, Pressable, Image } from "react-native";
 import { useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
+import { CurrencyImageGroup } from "@/components/currency-image";
 import { cn } from "@/lib/utils";
 import {
   calculateChange,
   convertNewToOld,
   formatNumber,
-  getCurrencyImagePath,
   validateInput,
   type CurrencyChange,
 } from "@/lib/currency-calculator";
@@ -215,74 +215,38 @@ export default function HomeScreen() {
 function ChangeSuggestionCard({ suggestion, index }: { suggestion: any; index: number }) {
   const optionLabel = index === 0 ? "الخيار الأول" : index === 1 ? "الخيار الثاني" : "الخيار الثالث";
   return (
-    <View className="bg-surface rounded-lg p-3 border border-border gap-3">
+    <View className="bg-surface rounded-lg p-4 border border-border gap-4">
       <View>
         <Text className="text-xs text-muted font-semibold">{optionLabel}</Text>
       </View>
 
       {suggestion.newDenominations.length > 0 && (
-        <View className="gap-2">
+        <View className="gap-3">
           <View>
             <Text className="text-xs font-semibold text-primary">عملة جديدة:</Text>
           </View>
-          <View className="flex-row flex-wrap gap-2">
-            {suggestion.newDenominations.map((denom: any) => (
-              <CurrencyItem
-                key={`new-${denom.denomination}`}
-                denomination={denom.denomination}
-                count={denom.count}
-                type="new"
-              />
-            ))}
+          <View className="bg-background rounded-lg p-3 items-center">
+            <CurrencyImageGroup
+              denominations={suggestion.newDenominations}
+              type="new"
+            />
           </View>
         </View>
       )}
 
       {suggestion.oldDenominations.length > 0 && (
-        <View className="gap-2">
+        <View className="gap-3">
           <View>
             <Text className="text-xs font-semibold text-primary">عملة قديمة:</Text>
           </View>
-          <View className="flex-row flex-wrap gap-2">
-            {suggestion.oldDenominations.map((denom: any) => (
-              <CurrencyItem
-                key={`old-${denom.denomination}-${denom.imageVariant || 'default'}`}
-                denomination={denom.denomination}
-                count={denom.count}
-                type="old"
-                variant={denom.imageVariant}
-              />
-            ))}
+          <View className="bg-background rounded-lg p-3 items-center">
+            <CurrencyImageGroup
+              denominations={suggestion.oldDenominations}
+              type="old"
+            />
           </View>
         </View>
       )}
-    </View>
-  );
-}
-
-function CurrencyItem({
-  denomination,
-  count,
-  type,
-  variant,
-}: {
-  denomination: number;
-  count: number;
-  type: "new" | "old";
-  variant?: string;
-}) {
-  const currencyLabel = type === "new" ? "جديدة" : "قديمة";
-  
-  return (
-    <View className="bg-primary/10 rounded-lg p-2 border border-primary/20 gap-1 items-center">
-      <View>
-        <Text className="text-xs font-bold text-primary">
-          {count}x {denomination}
-        </Text>
-      </View>
-      <View>
-        <Text className="text-xs text-muted">{currencyLabel}</Text>
-      </View>
     </View>
   );
 }
