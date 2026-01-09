@@ -1,13 +1,10 @@
 import { View } from "react-native";
-import { useColors } from "@/hooks/use-colors";
 
 /**
  * مكون الفسيفساء الذهبية الدمشقية
- * يعرض نمط ناعم وجميل متدرج الشفافية بشكل قطري
+ * نمط ناعم وجميل متدرج الشفافية بشكل قطري
  */
 export function DamascusPattern() {
-  const colors = useColors();
-
   return (
     <View
       style={{
@@ -16,13 +13,13 @@ export function DamascusPattern() {
         left: 0,
         right: 0,
         bottom: 0,
-        opacity: 0.06,
+        opacity: 0.12,
         pointerEvents: "none",
         backgroundColor: "transparent",
         overflow: "hidden",
       }}
     >
-      {/* النمط الأساسي - خطوط قطرية ناعمة */}
+      {/* النمط الأساسي - خطوط قطرية ذهبية */}
       <View
         style={{
           position: "absolute",
@@ -33,16 +30,16 @@ export function DamascusPattern() {
           backgroundImage: `repeating-linear-gradient(
             45deg,
             transparent 0px,
-            transparent 20px,
-            rgba(212, 175, 55, 0.12) 20px,
-            rgba(212, 175, 55, 0.12) 22px,
-            transparent 22px,
-            transparent 40px
+            transparent 15px,
+            rgba(212, 175, 55, 0.25) 15px,
+            rgba(212, 175, 55, 0.25) 18px,
+            transparent 18px,
+            transparent 30px
           )`,
         }}
       />
 
-      {/* الطبقة الثانية - خطوط قطرية معاكسة أرق */}
+      {/* الطبقة الثانية - خطوط قطرية معاكسة */}
       <View
         style={{
           position: "absolute",
@@ -53,16 +50,16 @@ export function DamascusPattern() {
           backgroundImage: `repeating-linear-gradient(
             -45deg,
             transparent 0px,
-            transparent 30px,
-            rgba(212, 175, 55, 0.08) 30px,
-            rgba(212, 175, 55, 0.08) 31px,
-            transparent 31px,
-            transparent 60px
+            transparent 25px,
+            rgba(212, 175, 55, 0.15) 25px,
+            rgba(212, 175, 55, 0.15) 27px,
+            transparent 27px,
+            transparent 50px
           )`,
         }}
       />
 
-      {/* الطبقة الثالثة - نقاط صغيرة موزعة */}
+      {/* الطبقة الثالثة - نقاط ذهبية صغيرة */}
       <View
         style={{
           position: "absolute",
@@ -72,11 +69,11 @@ export function DamascusPattern() {
           bottom: 0,
           backgroundImage: `radial-gradient(
             circle,
-            rgba(212, 175, 55, 0.1) 1px,
-            transparent 1px
+            rgba(212, 175, 55, 0.2) 1.5px,
+            transparent 1.5px
           )`,
-          backgroundSize: "50px 50px",
-          backgroundPosition: "0 0, 25px 25px",
+          backgroundSize: "40px 40px",
+          backgroundPosition: "0 0, 20px 20px",
         }}
       />
     </View>
