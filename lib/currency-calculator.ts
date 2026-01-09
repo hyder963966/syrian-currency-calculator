@@ -11,181 +11,269 @@ export const OLD_CURRENCY_DENOMINATIONS = [500, 1000, 2000, 5000];
 // تحويل بين العملتين
 export const CONVERSION_RATE = 100; // 1 جديدة = 100 قديمة
 
-export interface CurrencyChange {
-  newCurrency: number; // بالعملة الجديدة
-  oldCurrency: number; // بالعملة القديمة
-  suggestions: ChangeSuggestion[];
-  paymentSuggestions: PaymentSuggestion[];
+// تحويل من جديدة إلى قديمة
+export function convertNewToOld(newCurrency: number): number {
+  return newCurrency * CONVERSION_RATE;
+}
+
+// تحويل من قديمة إلى جديدة
+export function convertOldToNew(oldCurrency: number): number {
+  return Math.round(oldCurrency / CONVERSION_RATE);
+}
+
+// تنسيق الرقم بفواصل آلاف وتحويله للأرقام العربية
+export function formatNumber(num: number): string {
+  const englishNum = Math.floor(num).toString();
+  const formatted = englishNum.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  
+  // تحويل الأرقام الإنجليزية إلى عربية
+  const arabicDigits = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+  return formatted.split("").map(char => {
+    if (char >= "0" && char <= "9") {
+      return arabicDigits[parseInt(char)];
+    }
+    if (char === ",") {
+      return "٬";
+    }
+    return char;
+  }).join("");
+}
+
+// التحقق من صحة الإدخال
+export function validateInput(priceInNew: number, paidInOld: number): string | null {
+  if (priceInNew <= 0) {
+    return "المبلغ المراد دفعه يجب أن يكون أكبر من صفر";
+  }
+  if (paidInOld <= 0) {
+    return "المبلغ المدفوع يجب أن يكون أكبر من صفر";
+  }
+  // التحقق من أن القيم رقام صحيحة
+  if (!Number.isInteger(priceInNew)) {
+    return "المبلغ المراد دفعه يجب أن يكون رقماً صحيحاً";
+  }
+  if (!Number.isInteger(paidInOld)) {
+    return "المبلغ المدفوع يجب أن يكون رقماً صحيحاً";
+  }
+  return null;
 }
 
 export interface ChangeSuggestion {
   id: string;
-  newDenominations: { denomination: number; count: number }[];
+  newDenominations: { denomination: number; count: number; imageVariant?: string }[];
   oldDenominations: { denomination: number; count: number; imageVariant?: string }[];
-  totalNew: number;
-  totalOld: number;
+  description: string;
 }
 
-export interface PaymentSuggestion {
+export interface CurrencyChange {
+  newCurrency: number;
+  oldCurrency: number;
+  suggestions: ChangeSuggestion[];
+  smartSuggestions?: SmartSuggestion[];
+}
+
+export interface SmartSuggestion {
   id: string;
-  newDenominations: { denomination: number; count: number }[];
+  type: "add_to_new" | "add_to_old";
+  additionalAmount: number;
+  additionalAmountInOld: number;
+  newTotalChange: number;
+  oldTotalChange: number;
+  newDenominations: { denomination: number; count: number; imageVariant?: string }[];
   oldDenominations: { denomination: number; count: number; imageVariant?: string }[];
-  totalNew: number;
-  totalOld: number;
+  description: string;
 }
 
 /**
- * تحويل من العملة الجديدة إلى القديمة
+ * حساب الفرق والاقتراحات
  */
-export function convertNewToOld(newAmount: number): number {
-  return Math.round(newAmount * CONVERSION_RATE);
-}
-
-/**
- * تحويل من العملة القديمة إلى الجديدة
- */
-export function convertOldToNew(oldAmount: number): number {
-  return Math.round(oldAmount / CONVERSION_RATE);
-}
-
-/**
- * حساب الفرق والترجيع
- */
-export function calculateChange(
-  priceInNew: number,
-  paidInOld: number
-): CurrencyChange | null {
+export function calculateChange(priceInNew: number, paidInOld: number): CurrencyChange | null {
   const priceInOld = convertNewToOld(priceInNew);
-  const changeInOld = paidInOld - priceInOld;
-  const changeInNew = convertOldToNew(changeInOld);
 
-  if (changeInOld < 0) {
-    // المبلغ المدفوع أقل من المطلوب
+  // التحقق من أن المبلغ المدفوع كافٍ
+  if (paidInOld < priceInOld) {
     return null;
   }
 
+  const changeInOld = paidInOld - priceInOld;
+  const changeInNew = convertOldToNew(changeInOld);
+
+  // إذا لم يكن هناك فرق
   if (changeInOld === 0) {
-    // لا يوجد ترجيع
     return {
       newCurrency: 0,
       oldCurrency: 0,
       suggestions: [],
-      paymentSuggestions: [],
+      smartSuggestions: [],
     };
   }
 
-  const suggestions = generateChangeSuggestions(changeInNew, changeInOld);
-  const paymentSuggestions = generatePaymentSuggestions(priceInOld, paidInOld);
+  const suggestions = generateSuggestions(changeInNew, changeInOld);
+  const smartSuggestions = generateSmartSuggestions(changeInNew, changeInOld);
 
   return {
     newCurrency: changeInNew,
     oldCurrency: changeInOld,
     suggestions,
-    paymentSuggestions,
+    smartSuggestions,
   };
 }
 
 /**
- * توليد اقتراحات الترجيع
+ * توليد الاقتراحات العادية
  */
-function generateChangeSuggestions(changeInNew: number, changeInOld: number): ChangeSuggestion[] {
+function generateSuggestions(changeInNew: number, changeInOld: number): ChangeSuggestion[] {
   const suggestions: ChangeSuggestion[] = [];
 
-  // اقتراح 1: استخدام العملة الجديدة بشكل أساسي
-  const newDenominations = getOptimalDenominations(changeInNew, NEW_CURRENCY_DENOMINATIONS);
-  if (newDenominations.length > 0) {
+  // الاقتراح الأول: باستخدام العملة الجديدة فقط
+  const newDenoms1 = getOptimalDenominations(changeInNew, NEW_CURRENCY_DENOMINATIONS);
+  if (newDenoms1.length > 0) {
     suggestions.push({
-      id: 'new-primary',
-      newDenominations,
+      id: "suggestion_1",
+      newDenominations: newDenoms1.map((d) => ({
+        denomination: d.denomination,
+        count: d.count,
+      })),
       oldDenominations: [],
-      totalNew: changeInNew,
-      totalOld: changeInOld,
+      description: "باستخدام العملة الجديدة",
     });
   }
 
-  // اقتراح 2: استخدام العملة القديمة
-  const oldDenominations = getOptimalDenominations(changeInOld, OLD_CURRENCY_DENOMINATIONS);
-  if (oldDenominations.length > 0) {
+  // الاقتراح الثاني: باستخدام العملة القديمة فقط
+  const oldDenoms1 = getOptimalDenominations(changeInOld, OLD_CURRENCY_DENOMINATIONS);
+  if (oldDenoms1.length > 0) {
+    const oldDenominationsWithVariants = oldDenoms1.map((d) => {
+      // للـ 500 القديمة، استخدم الشكل الثاني في الاقتراح الثاني
+      if (d.denomination === 500 && suggestions.length === 1) {
+        return {
+          denomination: d.denomination,
+          count: d.count,
+          imageVariant: "variant2",
+        };
+      }
+      return {
+        denomination: d.denomination,
+        count: d.count,
+      };
+    });
+
     suggestions.push({
-      id: 'old-primary',
+      id: "suggestion_2",
       newDenominations: [],
-      oldDenominations,
-      totalNew: changeInNew,
-      totalOld: changeInOld,
+      oldDenominations: oldDenominationsWithVariants,
+      description: "باستخدام العملة القديمة",
     });
   }
 
-  // اقتراح 3: مزيج من العملتين
-  if (changeInNew > 500 && changeInOld > 5000) {
-    const mixedNew = getOptimalDenominations(changeInNew, NEW_CURRENCY_DENOMINATIONS);
-    const remainingOld = changeInOld - convertNewToOld(changeInNew);
-    const mixedOld = remainingOld > 0 ? getOptimalDenominations(remainingOld, OLD_CURRENCY_DENOMINATIONS) : [];
-    
-    if (mixedNew.length > 0 || mixedOld.length > 0) {
+  // الاقتراح الثالث: مزيج من الجديدة والقديمة
+  if (changeInNew >= 10) {
+    const newDenoms2 = getOptimalDenominations(changeInNew, NEW_CURRENCY_DENOMINATIONS);
+    const remainingOld = changeInOld % 100;
+    const oldDenoms2 = remainingOld > 0 ? getOptimalDenominations(remainingOld, OLD_CURRENCY_DENOMINATIONS) : [];
+
+    if (newDenoms2.length > 0 || oldDenoms2.length > 0) {
       suggestions.push({
-        id: 'mixed',
-        newDenominations: mixedNew,
-        oldDenominations: mixedOld,
-        totalNew: changeInNew,
-        totalOld: changeInOld,
+        id: "suggestion_3",
+        newDenominations: newDenoms2.map((d) => ({
+          denomination: d.denomination,
+          count: d.count,
+        })),
+        oldDenominations: oldDenoms2.map((d) => ({
+          denomination: d.denomination,
+          count: d.count,
+        })),
+        description: "مزيج من العملة الجديدة والقديمة",
       });
     }
   }
-
-  // إذا كانت الـ 500 القديمة مستخدمة، أضف الشكل البديل
-  suggestions.forEach(suggestion => {
-    if (suggestion.oldDenominations.some(d => d.denomination === 500)) {
-      // نسخ الاقتراح مع تغيير variant للـ 500
-      const alternativeSuggestion = {
-        ...suggestion,
-        id: suggestion.id + '-alt',
-        oldDenominations: suggestion.oldDenominations.map(d => ({
-          ...d,
-          imageVariant: d.denomination === 500 ? 'variant2' : undefined,
-        })),
-      };
-      suggestions.push(alternativeSuggestion);
-    }
-  });
 
   return suggestions;
 }
 
 /**
- * توليد اقتراحات الدفع
+ * توليد الاقتراحات الذكية للفرق الصغير
  */
-function generatePaymentSuggestions(priceInOld: number, paidInOld: number): PaymentSuggestion[] {
-  const suggestions: PaymentSuggestion[] = [];
+function generateSmartSuggestions(changeInNew: number, changeInOld: number): SmartSuggestion[] {
+  const suggestions: SmartSuggestion[] = [];
 
-  if (paidInOld >= priceInOld) {
-    return suggestions;
-  }
-
-  // الفرق المتبقي
-  const remainingInOld = priceInOld - paidInOld;
-  const remainingInNew = convertOldToNew(remainingInOld);
-
-  // اقتراح 1: دفع الفرق بالعملة الجديدة
-  const newDenominations = getOptimalDenominations(remainingInNew, NEW_CURRENCY_DENOMINATIONS);
-  if (newDenominations.length > 0) {
+  // إذا كان الفرق 5 ليرات جديدة (500 قديمة)
+  if (changeInNew === 5) {
+    // الخيار 1: إضافة 20 ليرة جديدة للحصول على 25 ليرة ترجيع
+    const addAmount1 = 20;
+    const newTotal1 = changeInNew + addAmount1; // 25
+    const newDenoms1 = getOptimalDenominations(newTotal1, NEW_CURRENCY_DENOMINATIONS);
     suggestions.push({
-      id: 'payment-new',
-      newDenominations,
+      id: "smart_1",
+      type: "add_to_new",
+      additionalAmount: addAmount1,
+      additionalAmountInOld: convertNewToOld(addAmount1),
+      newTotalChange: newTotal1,
+      oldTotalChange: convertNewToOld(newTotal1),
+      newDenominations: newDenoms1.map((d) => ({
+        denomination: d.denomination,
+        count: d.count,
+      })),
       oldDenominations: [],
-      totalNew: remainingInNew,
-      totalOld: remainingInOld,
+      description: `أضف ${addAmount1} ليرة جديدة لتحصل على ${newTotal1} ليرة ترجيع`,
+    });
+
+    // الخيار 2: إضافة 50 ليرة جديدة للحصول على 55 ليرة ترجيع
+    const addAmount2 = 50;
+    const newTotal2 = changeInNew + addAmount2; // 55
+    const newDenoms2 = getOptimalDenominations(newTotal2, NEW_CURRENCY_DENOMINATIONS);
+    suggestions.push({
+      id: "smart_2",
+      type: "add_to_new",
+      additionalAmount: addAmount2,
+      additionalAmountInOld: convertNewToOld(addAmount2),
+      newTotalChange: newTotal2,
+      oldTotalChange: convertNewToOld(newTotal2),
+      newDenominations: newDenoms2.map((d) => ({
+        denomination: d.denomination,
+        count: d.count,
+      })),
+      oldDenominations: [],
+      description: `أضف ${addAmount2} ليرة جديدة لتحصل على ${newTotal2} ليرة ترجيع`,
+    });
+
+    // الخيار 3: إضافة 100 ليرة جديدة للحصول على 105 ليرة ترجيع
+    const addAmount3 = 100;
+    const newTotal3 = changeInNew + addAmount3; // 105
+    const newDenoms3 = getOptimalDenominations(newTotal3, NEW_CURRENCY_DENOMINATIONS);
+    suggestions.push({
+      id: "smart_3",
+      type: "add_to_new",
+      additionalAmount: addAmount3,
+      additionalAmountInOld: convertNewToOld(addAmount3),
+      newTotalChange: newTotal3,
+      oldTotalChange: convertNewToOld(newTotal3),
+      newDenominations: newDenoms3.map((d) => ({
+        denomination: d.denomination,
+        count: d.count,
+      })),
+      oldDenominations: [],
+      description: `أضف ${addAmount3} ليرة جديدة لتحصل على ${newTotal3} ليرة ترجيع`,
     });
   }
 
-  // اقتراح 2: دفع الفرق بالعملة القديمة
-  const oldDenominations = getOptimalDenominations(remainingInOld, OLD_CURRENCY_DENOMINATIONS);
-  if (oldDenominations.length > 0) {
+  // إذا كان الفرق 50 ليرة قديمة (0.5 ليرة جديدة) - حالة نادرة
+  if (changeInOld === 50 && changeInNew < 1) {
+    // اقترح إضافة 450 ليرة قديمة للحصول على 500 ليرة ترجيع
+    const addOldAmount = 450;
+    const newTotalOld = changeInOld + addOldAmount; // 500
+    const oldDenoms = getOptimalDenominations(newTotalOld, OLD_CURRENCY_DENOMINATIONS);
     suggestions.push({
-      id: 'payment-old',
+      id: "smart_old_1",
+      type: "add_to_old",
+      additionalAmount: convertOldToNew(addOldAmount),
+      additionalAmountInOld: addOldAmount,
+      newTotalChange: convertOldToNew(newTotalOld),
+      oldTotalChange: newTotalOld,
       newDenominations: [],
-      oldDenominations,
-      totalNew: remainingInNew,
-      totalOld: remainingInOld,
+      oldDenominations: oldDenoms.map((d) => ({
+        denomination: d.denomination,
+        count: d.count,
+      })),
+      description: `أضف ${addOldAmount} ليرة قديمة لتحصل على ورقة 500 ليرة`,
     });
   }
 
@@ -223,15 +311,15 @@ function getOptimalDenominations(
       if (reduced > 0) {
         const freed = result[i].denomination;
         const newRemaining = remaining + freed;
-        
+
         // جرب الفئات الأصغر
-        const smallerDenoms = sorted.filter(d => d < result[i].denomination);
-        const canMakeUp = smallerDenoms.some(d => newRemaining % d === 0 || newRemaining >= d);
-        
+        const smallerDenoms = sorted.filter((d) => d < result[i].denomination);
+        const canMakeUp = smallerDenoms.some((d) => newRemaining % d === 0 || newRemaining >= d);
+
         if (canMakeUp) {
           result[i].count = reduced;
           remaining = newRemaining;
-          
+
           for (const denom of smallerDenoms) {
             if (remaining >= denom) {
               const count = Math.floor(remaining / denom);
@@ -247,44 +335,5 @@ function getOptimalDenominations(
 
   // إزالة الفئات بـ 0 عدد
   // تصفية أي فئات غير مطلوبة (مثل 5 ليرات في الجديدة)
-  return result.filter(r => r.count > 0);
-}
-
-/**
- * تنسيق الرقم بفواصل آلاف
- */
-export function formatNumber(num: number): string {
-  return num.toLocaleString('ar-SY');
-}
-
-/**
- * الحصول على مسار صورة العملة
- */
-export function getCurrencyImagePath(
-  denomination: number,
-  isCurrency: 'new' | 'old',
-  variant?: string
-): string {
-  const folder = isCurrency === 'new' ? 'عملة جديدة' : 'عملة قديمة';
-  const fileName = variant ? `${denomination}(${variant}).jpg` : `${denomination}.jpg`;
-  return `../assets/currency/${folder}/${fileName}`;
-}
-
-/**
- * التحقق من صحة المدخلات
- */
-export function validateInput(priceInNew: number, paidInOld: number): string | null {
-  if (priceInNew <= 0) {
-    return 'المبلغ المراد دفعه يجب أن يكون أكبر من صفر';
-  }
-
-  if (paidInOld <= 0) {
-    return 'المبلغ المدفوع يجب أن يكون أكبر من صفر';
-  }
-
-  if (!Number.isInteger(priceInNew) || !Number.isInteger(paidInOld)) {
-    return 'يجب إدخال أرقام صحيحة';
-  }
-
-  return null;
+  return result.filter((r) => r.count > 0);
 }
