@@ -3,7 +3,7 @@ import { useColors } from "@/hooks/use-colors";
 
 /**
  * مكون الفسيفساء الذهبية الدمشقية
- * يعرض نمط متدرج الشفافية بشكل قطري
+ * يعرض نمط ناعم وجميل متدرج الشفافية بشكل قطري
  */
 export function DamascusPattern() {
   const colors = useColors();
@@ -16,12 +16,13 @@ export function DamascusPattern() {
         left: 0,
         right: 0,
         bottom: 0,
-        opacity: 0.08,
+        opacity: 0.06,
         pointerEvents: "none",
         backgroundColor: "transparent",
+        overflow: "hidden",
       }}
     >
-      {/* النمط الأساسي - خطوط قطرية */}
+      {/* النمط الأساسي - خطوط قطرية ناعمة */}
       <View
         style={{
           position: "absolute",
@@ -31,15 +32,17 @@ export function DamascusPattern() {
           bottom: 0,
           backgroundImage: `repeating-linear-gradient(
             45deg,
-            transparent,
-            transparent 35px,
-            rgba(212, 175, 55, 0.15) 35px,
-            rgba(212, 175, 55, 0.15) 70px
+            transparent 0px,
+            transparent 20px,
+            rgba(212, 175, 55, 0.12) 20px,
+            rgba(212, 175, 55, 0.12) 22px,
+            transparent 22px,
+            transparent 40px
           )`,
         }}
       />
 
-      {/* الطبقة الثانية - خطوط قطرية معاكسة */}
+      {/* الطبقة الثانية - خطوط قطرية معاكسة أرق */}
       <View
         style={{
           position: "absolute",
@@ -49,11 +52,31 @@ export function DamascusPattern() {
           bottom: 0,
           backgroundImage: `repeating-linear-gradient(
             -45deg,
-            transparent,
-            transparent 50px,
-            rgba(212, 175, 55, 0.08) 50px,
-            rgba(212, 175, 55, 0.08) 100px
+            transparent 0px,
+            transparent 30px,
+            rgba(212, 175, 55, 0.08) 30px,
+            rgba(212, 175, 55, 0.08) 31px,
+            transparent 31px,
+            transparent 60px
           )`,
+        }}
+      />
+
+      {/* الطبقة الثالثة - نقاط صغيرة موزعة */}
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: `radial-gradient(
+            circle,
+            rgba(212, 175, 55, 0.1) 1px,
+            transparent 1px
+          )`,
+          backgroundSize: "50px 50px",
+          backgroundPosition: "0 0, 25px 25px",
         }}
       />
     </View>

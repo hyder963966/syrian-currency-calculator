@@ -126,7 +126,7 @@ function generateSuggestions(changeInNew: number, changeInOld: number): ChangeSu
 
   // الاقتراح الأول: باستخدام العملة الجديدة فقط
   const newDenoms1 = getOptimalDenominations(changeInNew, NEW_CURRENCY_DENOMINATIONS);
-  if (newDenoms1.length > 0) {
+  if (newDenoms1.length > 0 && sumDenominations(newDenoms1) === changeInNew) {
     suggestions.push({
       id: "suggestion_1",
       newDenominations: newDenoms1.map((d) => ({
@@ -140,7 +140,7 @@ function generateSuggestions(changeInNew: number, changeInOld: number): ChangeSu
 
   // الاقتراح الثاني: باستخدام العملة القديمة فقط
   const oldDenoms1 = getOptimalDenominations(changeInOld, OLD_CURRENCY_DENOMINATIONS);
-  if (oldDenoms1.length > 0) {
+  if (oldDenoms1.length > 0 && sumDenominations(oldDenoms1) === changeInOld) {
     const oldDenominationsWithVariants = oldDenoms1.map((d) => {
       // للـ 500 القديمة، استخدم الشكل الثاني في الاقتراح الثاني
       if (d.denomination === 500 && suggestions.length === 1) {
@@ -170,7 +170,10 @@ function generateSuggestions(changeInNew: number, changeInOld: number): ChangeSu
     const remainingOld = changeInOld % 100;
     const oldDenoms2 = remainingOld > 0 ? getOptimalDenominations(remainingOld, OLD_CURRENCY_DENOMINATIONS) : [];
 
-    if (newDenoms2.length > 0 || oldDenoms2.length > 0) {
+    const totalNew = sumDenominations(newDenoms2);
+    const totalOld = sumDenominations(oldDenoms2);
+
+    if ((totalNew + totalOld * 100 === changeInOld || (totalNew > 0 && totalOld === 0)) && (newDenoms2.length > 0 || oldDenoms2.length > 0)) {
       suggestions.push({
         id: "suggestion_3",
         newDenominations: newDenoms2.map((d) => ({
@@ -190,6 +193,13 @@ function generateSuggestions(changeInNew: number, changeInOld: number): ChangeSu
 }
 
 /**
+ * حساب مجموع الفئات
+ */
+function sumDenominations(denoms: { denomination: number; count: number }[]): number {
+  return denoms.reduce((sum, d) => sum + d.denomination * d.count, 0);
+}
+
+/**
  * توليد الاقتراحات الذكية للفرق الصغير
  * عندما يكون الفرق 5 ليرات جديدة، يقترح إضافة مبالغ معينة للحصول على فئات متاحة
  */
@@ -202,58 +212,64 @@ function generateSmartSuggestions(changeInNew: number, changeInOld: number): Sma
     const addAmount1 = 20;
     const newTotal1 = changeInNew + addAmount1; // 25
     const newDenoms1 = getOptimalDenominations(newTotal1, NEW_CURRENCY_DENOMINATIONS);
-    suggestions.push({
-      id: "smart_1",
-      type: "add_to_new",
-      additionalAmount: addAmount1,
-      additionalAmountInOld: convertNewToOld(addAmount1),
-      newTotalChange: newTotal1,
-      oldTotalChange: convertNewToOld(newTotal1),
-      newDenominations: newDenoms1.map((d) => ({
-        denomination: d.denomination,
-        count: d.count,
-      })),
-      oldDenominations: [],
-      description: `أضف ${addAmount1} ليرة جديدة لتحصل على ${newTotal1} ليرة ترجيع`,
-    });
+    if (sumDenominations(newDenoms1) === newTotal1) {
+      suggestions.push({
+        id: "smart_1",
+        type: "add_to_new",
+        additionalAmount: addAmount1,
+        additionalAmountInOld: convertNewToOld(addAmount1),
+        newTotalChange: newTotal1,
+        oldTotalChange: convertNewToOld(newTotal1),
+        newDenominations: newDenoms1.map((d) => ({
+          denomination: d.denomination,
+          count: d.count,
+        })),
+        oldDenominations: [],
+        description: `أضف ${addAmount1} ليرة جديدة لتحصل على ${newTotal1} ليرة ترجيع`,
+      });
+    }
 
     // الخيار 2: إضافة 50 ليرة جديدة للحصول على 55 ليرة ترجيع
     const addAmount2 = 50;
     const newTotal2 = changeInNew + addAmount2; // 55
     const newDenoms2 = getOptimalDenominations(newTotal2, NEW_CURRENCY_DENOMINATIONS);
-    suggestions.push({
-      id: "smart_2",
-      type: "add_to_new",
-      additionalAmount: addAmount2,
-      additionalAmountInOld: convertNewToOld(addAmount2),
-      newTotalChange: newTotal2,
-      oldTotalChange: convertNewToOld(newTotal2),
-      newDenominations: newDenoms2.map((d) => ({
-        denomination: d.denomination,
-        count: d.count,
-      })),
-      oldDenominations: [],
-      description: `أضف ${addAmount2} ليرة جديدة لتحصل على ${newTotal2} ليرة ترجيع`,
-    });
+    if (sumDenominations(newDenoms2) === newTotal2) {
+      suggestions.push({
+        id: "smart_2",
+        type: "add_to_new",
+        additionalAmount: addAmount2,
+        additionalAmountInOld: convertNewToOld(addAmount2),
+        newTotalChange: newTotal2,
+        oldTotalChange: convertNewToOld(newTotal2),
+        newDenominations: newDenoms2.map((d) => ({
+          denomination: d.denomination,
+          count: d.count,
+        })),
+        oldDenominations: [],
+        description: `أضف ${addAmount2} ليرة جديدة لتحصل على ${newTotal2} ليرة ترجيع`,
+      });
+    }
 
     // الخيار 3: إضافة 100 ليرة جديدة للحصول على 105 ليرة ترجيع
     const addAmount3 = 100;
     const newTotal3 = changeInNew + addAmount3; // 105
     const newDenoms3 = getOptimalDenominations(newTotal3, NEW_CURRENCY_DENOMINATIONS);
-    suggestions.push({
-      id: "smart_3",
-      type: "add_to_new",
-      additionalAmount: addAmount3,
-      additionalAmountInOld: convertNewToOld(addAmount3),
-      newTotalChange: newTotal3,
-      oldTotalChange: convertNewToOld(newTotal3),
-      newDenominations: newDenoms3.map((d) => ({
-        denomination: d.denomination,
-        count: d.count,
-      })),
-      oldDenominations: [],
-      description: `أضف ${addAmount3} ليرة جديدة لتحصل على ${newTotal3} ليرة ترجيع`,
-    });
+    if (sumDenominations(newDenoms3) === newTotal3) {
+      suggestions.push({
+        id: "smart_3",
+        type: "add_to_new",
+        additionalAmount: addAmount3,
+        additionalAmountInOld: convertNewToOld(addAmount3),
+        newTotalChange: newTotal3,
+        oldTotalChange: convertNewToOld(newTotal3),
+        newDenominations: newDenoms3.map((d) => ({
+          denomination: d.denomination,
+          count: d.count,
+        })),
+        oldDenominations: [],
+        description: `أضف ${addAmount3} ليرة جديدة لتحصل على ${newTotal3} ليرة ترجيع`,
+      });
+    }
   }
 
   // إذا كان الفرق 50 ليرة قديمة (0.5 ليرة جديدة) - حالة نادرة
@@ -262,20 +278,22 @@ function generateSmartSuggestions(changeInNew: number, changeInOld: number): Sma
     const addOldAmount = 450;
     const newTotalOld = changeInOld + addOldAmount; // 500
     const oldDenoms = getOptimalDenominations(newTotalOld, OLD_CURRENCY_DENOMINATIONS);
-    suggestions.push({
-      id: "smart_old_1",
-      type: "add_to_old",
-      additionalAmount: convertOldToNew(addOldAmount),
-      additionalAmountInOld: addOldAmount,
-      newTotalChange: convertOldToNew(newTotalOld),
-      oldTotalChange: newTotalOld,
-      newDenominations: [],
-      oldDenominations: oldDenoms.map((d) => ({
-        denomination: d.denomination,
-        count: d.count,
-      })),
-      description: `أضف ${addOldAmount} ليرة قديمة لتحصل على ورقة 500 ليرة`,
-    });
+    if (sumDenominations(oldDenoms) === newTotalOld) {
+      suggestions.push({
+        id: "smart_old_1",
+        type: "add_to_old",
+        additionalAmount: convertOldToNew(addOldAmount),
+        additionalAmountInOld: addOldAmount,
+        newTotalChange: convertOldToNew(newTotalOld),
+        oldTotalChange: newTotalOld,
+        newDenominations: [],
+        oldDenominations: oldDenoms.map((d) => ({
+          denomination: d.denomination,
+          count: d.count,
+        })),
+        description: `أضف ${addOldAmount} ليرة قديمة لتحصل على ورقة 500 ليرة`,
+      });
+    }
   }
 
   return suggestions;
@@ -283,19 +301,24 @@ function generateSmartSuggestions(changeInNew: number, changeInOld: number): Sma
 
 /**
  * الحصول على أفضل توزيع للفئات
- * تحاول استخدام أكبر الفئات أولاً
- * ملاحظة: تتجنب استخدام فئة 5 ليرات في العملة الجديدة
+ * تستخدم خوارزمية الجشع (Greedy Algorithm) لاختيار أفضل توليفة
  */
 function getOptimalDenominations(
   amount: number,
   denominations: number[]
 ): { denomination: number; count: number }[] {
+  // إذا كان المبلغ 0، أرجع مصفوفة فارغة
+  if (amount === 0) {
+    return [];
+  }
+
   const result: { denomination: number; count: number }[] = [];
   let remaining = amount;
 
   // ترتيب الفئات من الأكبر إلى الأصغر
   const sorted = [...denominations].sort((a, b) => b - a);
 
+  // استخدم الفئات الكبيرة أولاً
   for (const denom of sorted) {
     if (remaining >= denom) {
       const count = Math.floor(remaining / denom);
@@ -304,37 +327,55 @@ function getOptimalDenominations(
     }
   }
 
-  // إذا بقي رصيد، حاول إيجاد توليفة أفضل
+  // إذا بقي رصيد، فهذا يعني أن المبلغ لا يمكن تكوينه من الفئات المتاحة
+  // في هذه الحالة، حاول إيجاد توليفة بديلة
   if (remaining > 0) {
-    // حاول تقليل أحد الفئات وإضافة فئات أصغر
-    for (let i = 0; i < result.length; i++) {
-      const reduced = result[i].count - 1;
-      if (reduced > 0) {
-        const freed = result[i].denomination;
-        const newRemaining = remaining + freed;
+    return findAlternativeCombination(amount, denominations);
+  }
 
-        // جرب الفئات الأصغر
-        const smallerDenoms = sorted.filter((d) => d < result[i].denomination);
-        const canMakeUp = smallerDenoms.some((d) => newRemaining % d === 0 || newRemaining >= d);
+  return result;
+}
 
-        if (canMakeUp) {
-          result[i].count = reduced;
-          remaining = newRemaining;
+/**
+ * البحث عن توليفة بديلة عندما لا تنجح الخوارزمية الجشعة
+ */
+function findAlternativeCombination(
+  amount: number,
+  denominations: number[]
+): { denomination: number; count: number }[] {
+  const sorted = [...denominations].sort((a, b) => b - a);
 
-          for (const denom of smallerDenoms) {
-            if (remaining >= denom) {
-              const count = Math.floor(remaining / denom);
-              result.push({ denomination: denom, count });
-              remaining -= count * denom;
-            }
-          }
-          break;
+  // جرب تقليل كل فئة والبحث عن توليفة
+  for (let i = 0; i < sorted.length; i++) {
+    for (let reduce = 1; reduce <= Math.floor(amount / sorted[i]); reduce++) {
+      const remaining = amount - sorted[i] * reduce;
+      const result: { denomination: number; count: number }[] = [];
+      
+      if (remaining === 0) {
+        result.push({ denomination: sorted[i], count: reduce });
+        return result;
+      }
+
+      // جرب الفئات المتبقية
+      let temp = remaining;
+      const tempResult: { denomination: number; count: number }[] = [
+        { denomination: sorted[i], count: reduce },
+      ];
+
+      for (let j = i + 1; j < sorted.length; j++) {
+        if (temp >= sorted[j]) {
+          const count = Math.floor(temp / sorted[j]);
+          tempResult.push({ denomination: sorted[j], count });
+          temp -= count * sorted[j];
         }
+      }
+
+      if (temp === 0) {
+        return tempResult;
       }
     }
   }
 
-  // إزالة الفئات بـ 0 عدد
-  // تصفية أي فئات غير مطلوبة (مثل 5 ليرات في الجديدة)
-  return result.filter((r) => r.count > 0);
+  // إذا فشل كل شيء، أرجع مصفوفة فارغة
+  return [];
 }
